@@ -11,18 +11,54 @@ export async function handler(event) {
     return { statusCode: 500, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY puuttuu' }) }
   }
 
-  let text = '', category = 'shopping'
+  let text = '', category = 'shopping', mode = 'items'
   try {
     const body = JSON.parse(event.body || '{}')
     text = (body.text || '').slice(0, 4000)
     category = body.category || 'shopping'
+    mode = body.mode === 'title' ? 'title' : 'items'
   } catch {
     return { statusCode: 400, body: JSON.stringify({ error: 'Virheellinen pyyntö' }) }
   }
   if (!text.trim()) {
-    return { statusCode: 200, body: JSON.stringify({ items: [] }) }
+    return { statusCode: 200, body: JSON.stringify(mode === 'title' ? { title: '' } : { items: [] }) }
   }
 
+  // ---- Tila 1: siisti listan nimi yhdeksi lyhyeksi otsikoksi ----
+  if (mode === 'title') {
+    const titlePrompt = `Käyttäjä saneli nimen uudelle listalle. Tee siitä yksi lyhyt, siisti otsikko suomeksi.
+Korkeintaan 4 sanaa. Iso alkukirjain. Poista täytesanat. Älä lisää lainausmerkkejä tai pistettä.
+Palauta VAIN otsikko, ei muuta.
+
+Sanelu: """${text}"""`
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 64,
+          messages: [{ role: 'user', content: titlePrompt }],
+        }),
+      })
+      if (!res.ok) {
+        const errText = await res.text()
+        return { statusCode: 502, body: JSON.stringify({ error: 'Claude-virhe', detail: errText }) }
+      }
+      const data = await res.json()
+      let title = (data?.content?.[0]?.text || '').trim()
+      title = title.replace(/^["'“”]+|["'“”.]+$/g, '').trim().slice(0, 60)
+      return {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title }),
+      }
+    } catch (err) {
+      return { statusCode: 500, body: JSON.stringify({ error: String(err) }) }
+    }
+  }
+
+  // ---- Tila 2: pilko puhe erillisiksi riveiksi ----
   const ohje = category === 'todo'
     ? 'Teksti on perheen tehtävälistalle saneltua puhetta. Pilko se erillisiksi tehtäviksi.'
     : 'Teksti on kauppalistalle saneltua puhetta. Pilko se erillisiksi ostettaviksi tuotteiksi.'

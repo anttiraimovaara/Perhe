@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import Icon from '../Icon'
+import Dictation from './Dictation'
 
 export default function ListsOverview({ category, user, onBack, onOpenList }) {
   const [lists, setLists] = useState([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState('')
   const [counts, setCounts] = useState({})
+  const [busy, setBusy] = useState(false)
 
   async function load() {
     const { data } = await supabase
@@ -44,6 +46,29 @@ export default function ListsOverview({ category, user, onBack, onOpenList }) {
     await supabase.from('lists').insert({ category: category.id, title, created_by: user.name })
   }
 
+  // Sanele listan nimi -> Claude siistii sen lyhyeksi otsikoksi kenttään
+  async function onDictateName(rawText) {
+    if (!rawText.trim()) return
+    setBusy(true)
+    try {
+      const res = await fetch('/.netlify/functions/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawText, mode: 'title' }),
+      })
+      if (res.ok) {
+        const { title } = await res.json()
+        setNewTitle(title || rawText.trim())
+      } else {
+        setNewTitle(rawText.trim())
+      }
+    } catch {
+      setNewTitle(rawText.trim())
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function removeList(list) {
     if (!confirm(`Poistetaanko lista "${list.title}" ja kaikki sen rivit?`)) return
     await supabase.from('lists').delete().eq('id', list.id)
@@ -59,10 +84,12 @@ export default function ListsOverview({ category, user, onBack, onOpenList }) {
         <form className="add-row" onSubmit={addList}>
           <input type="text" placeholder="Uusi lista, esim. Ruokakauppa"
             value={newTitle} onChange={e => setNewTitle(e.target.value)} />
-          <button className="btn primary" type="submit" disabled={!newTitle.trim()}>
+          <Dictation onResult={onDictateName} disabled={busy} />
+          <button className="btn primary" type="submit" disabled={!newTitle.trim() || busy}>
             <Icon name="plus" size={20} color="#fff" />
           </button>
         </form>
+        {busy && <div className="spinner" style={{ padding: 8 }}>Siistitään nimeä…</div>}
 
         {loading && <div className="spinner">Ladataan…</div>}
         {!loading && lists.length === 0 && (
