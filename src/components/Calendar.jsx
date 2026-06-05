@@ -18,6 +18,32 @@ function addMonthsClamped(d, n) {
   x.setDate(Math.min(day, last))
   return x
 }
+// Rakenna "Lisää Google-kalenteriin" -linkki (avaa valmiiksi täytetyn lomakkeen)
+function googleCalUrl({ title, date, allDay, time, note, who, recur, until }) {
+  let dates
+  if (allDay) {
+    const d = date.replace(/-/g, '')
+    const next = ymd(addDays(parseYmd(date), 1)).replace(/-/g, '')
+    dates = `${d}/${next}`
+  } else {
+    const [h, m] = time.split(':')
+    const s = parseYmd(date); s.setHours(+h, +m, 0, 0)
+    const e = new Date(s.getTime() + 60 * 60000)
+    const fmt = x => `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`
+    dates = `${fmt(s)}/${fmt(e)}`
+  }
+  const params = ['action=TEMPLATE', `text=${encodeURIComponent(title)}`, `dates=${dates}`]
+  const det = [note, who ? `Kuka: ${who}` : ''].filter(Boolean).join(' — ')
+  if (det) params.push(`details=${encodeURIComponent(det)}`)
+  if (recur && recur !== 'none') {
+    const freq = { weekly: 'WEEKLY', monthly: 'MONTHLY', yearly: 'YEARLY' }[recur]
+    let rrule = `RRULE:FREQ=${freq}`
+    if (until) rrule += `;UNTIL=${until.replace(/-/g, '')}`
+    params.push(`recur=${encodeURIComponent(rrule)}`)
+  }
+  return `https://calendar.google.com/calendar/render?${params.join('&')}`
+}
+
 const MONTHS = ['Tammikuu','Helmikuu','Maaliskuu','Huhtikuu','Toukokuu','Kesäkuu','Heinäkuu','Elokuu','Syyskuu','Lokakuu','Marraskuu','Joulukuu']
 const WD_SHORT = ['su','ma','ti','ke','to','pe','la']
 const WD_HEAD = ['ma','ti','ke','to','pe','la','su']
@@ -37,7 +63,9 @@ function expand(events, rangeStart, rangeEnd) {
     while (d <= rangeEnd && guard < 800) {
       if (d >= rangeStart && (!until || d <= until)) out.push({ ...ev, occ: new Date(d) })
       if (until && d > until) break
-      d = ev.recur === 'weekly' ? addDays(d, 7) : addMonthsClamped(d, 1)
+      d = ev.recur === 'weekly' ? addDays(d, 7)
+        : ev.recur === 'yearly' ? addMonthsClamped(d, 12)
+        : addMonthsClamped(d, 1)
       guard++
     }
   }
@@ -312,6 +340,7 @@ function EventModal({ user, initial, onClose, onSaved }) {
               <option value="none">Ei toistu</option>
               <option value="weekly">Joka viikko</option>
               <option value="monthly">Joka kuukausi</option>
+              <option value="yearly">Joka vuosi</option>
             </select>
           </label>
           {recur !== 'none' && (
@@ -329,6 +358,15 @@ function EventModal({ user, initial, onClose, onSaved }) {
               style={{ color: '#A32D2D' }}><Icon name="trash" size={18} color="#A32D2D" /></button>}
             <button type="submit" className="btn primary grow" disabled={busy || !title.trim()}>Tallenna</button>
           </div>
+
+          {title.trim() && (
+            <a className="btn" href={googleCalUrl({ title, date, allDay, time, note, who, recur, until })}
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                marginTop: 8, textDecoration: 'none' }}>
+              <Icon name="calendar" size={18} color="#185FA5" /> Lisää Google-kalenteriin
+            </a>
+          )}
         </form>
       </div>
     </div>

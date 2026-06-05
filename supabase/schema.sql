@@ -75,7 +75,7 @@ create table if not exists public.events (
   event_time  time,
   who         text,
   note        text,
-  recur       text not null default 'none' check (recur in ('none','weekly','monthly')),
+  recur       text not null default 'none' check (recur in ('none','weekly','monthly','yearly')),
   recur_until date,
   created_by  text,
   created_at  timestamptz not null default now()

@@ -11,8 +11,8 @@ create table if not exists public.events (
   event_time  time,                          -- null = koko päivä
   who         text,                          -- perheenjäsenen nimi, 'Koko perhe' tai null
   note        text,
-  recur       text not null default 'none'   -- 'none' | 'weekly' | 'monthly'
-              check (recur in ('none','weekly','monthly')),
+  recur       text not null default 'none'   -- 'none' | 'weekly' | 'monthly' | 'yearly'
+              check (recur in ('none','weekly','monthly','yearly')),
   recur_until date,                          -- valinnainen toiston loppupäivä
   created_by  text,
   created_at  timestamptz not null default now()
