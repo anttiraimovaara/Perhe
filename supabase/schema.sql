@@ -19,6 +19,7 @@ create table if not exists public.items (
   text        text not null,
   checked     boolean not null default false,
   image_url   text,
+  image_by    text,
   added_by    text,
   position    bigint not null default (extract(epoch from now()) * 1000),
   created_at  timestamptz not null default now()

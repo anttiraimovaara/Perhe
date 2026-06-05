@@ -70,6 +70,27 @@ export default function ListView({ list, user, onBack }) {
     await supabase.from('items').delete().eq('id', item.id)
   }
 
+  async function editItem(item, newText) {
+    const t = (newText || '').trim()
+    if (!t || t === item.text) return
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, text: t } : i))
+    await supabase.from('items').update({ text: t }).eq('id', item.id)
+  }
+
+  async function removeImage(item) {
+    if (!confirm('Poistetaanko liitetty kuva?')) return
+    try {
+      const marker = '/kuvat/'
+      const idx = (item.image_url || '').indexOf(marker)
+      if (idx !== -1) {
+        const path = decodeURIComponent(item.image_url.slice(idx + marker.length))
+        await supabase.storage.from('kuvat').remove([path])
+      }
+    } catch (err) { console.error('Kuvan poisto epäonnistui:', err) }
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, image_url: null, image_by: null } : i))
+    await supabase.from('items').update({ image_url: null, image_by: null }).eq('id', item.id)
+  }
+
   function pickImage(item) {
     pendingImageItem.current = item
     fileRef.current?.click()
@@ -87,7 +108,7 @@ export default function ListView({ list, user, onBack }) {
       const { error: upErr } = await supabase.storage.from('kuvat').upload(path, file, { upsert: true })
       if (upErr) throw upErr
       const { data } = supabase.storage.from('kuvat').getPublicUrl(path)
-      await supabase.from('items').update({ image_url: data.publicUrl }).eq('id', item.id)
+      await supabase.from('items').update({ image_url: data.publicUrl, image_by: user.name }).eq('id', item.id)
       load()
     } catch (err) {
       showToast('Kuvan lisäys epäonnistui')
@@ -142,7 +163,8 @@ export default function ListView({ list, user, onBack }) {
         )}
 
         {openItems.map(item => (
-          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage}
+          <ItemRow key={item.id} item={item} me={user.name} onToggle={toggle} onRemove={removeItem}
+            onImage={pickImage} onEdit={editItem} onRemoveImage={removeImage}
             onCalendar={isTodo ? setCalItem : null} />
         ))}
 
@@ -152,7 +174,8 @@ export default function ListView({ list, user, onBack }) {
           </div>
         )}
         {doneItems.map(item => (
-          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage}
+          <ItemRow key={item.id} item={item} me={user.name} onToggle={toggle} onRemove={removeItem}
+            onImage={pickImage} onEdit={editItem} onRemoveImage={removeImage}
             onCalendar={isTodo ? setCalItem : null} />
         ))}
       </div>
@@ -184,28 +207,69 @@ export default function ListView({ list, user, onBack }) {
   )
 }
 
-function ItemRow({ item, onToggle, onRemove, onImage, onCalendar }) {
+function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, onRemoveImage }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(item.text)
+  // Vain rivin lisääjä saa muokata/poistaa (vanhat ilman lisääjää sallitaan kaikille)
+  const canModify = !item.added_by || item.added_by === me
+  // Kuvan saa poistaa sen lisääjä tai rivin tekijä
+  const canDeleteImage = item.image_url && (item.image_by === me || item.added_by === me || !item.added_by)
+
+  function saveEdit() { onEdit(item, val); setEditing(false) }
+
   return (
     <div className={'item' + (item.checked ? ' done' : '')}>
       <button className={'check' + (item.checked ? ' on' : '')} onClick={() => onToggle(item)}>
         {item.checked && <Icon name="check" size={16} color="#fff" stroke={3} />}
       </button>
       <div className="txt">
-        {item.text}
-        {item.added_by && <div className="who">{item.added_by}</div>}
-        {item.image_url && <img className="item-thumb" src={item.image_url} alt="" />}
+        {editing ? (
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input type="text" value={val} autoFocus onChange={e => setVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
+              style={{ flex: 1 }} />
+            <button className="btn primary" onClick={saveEdit} title="Tallenna">
+              <Icon name="check" size={16} color="#fff" stroke={3} />
+            </button>
+          </div>
+        ) : (
+          <>
+            {item.text}
+            {item.added_by && <div className="who">{item.added_by}</div>}
+            {item.image_url && (
+              <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+                <img className="item-thumb" src={item.image_url} alt="" />
+                {canDeleteImage && (
+                  <button className="img-del" onClick={() => onRemoveImage(item)} title="Poista kuva">
+                    <Icon name="trash" size={16} color="#fff" />
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
-      {onCalendar && (
+
+      {!editing && canModify && (
+        <button className="iconbtn" onClick={() => { setVal(item.text); setEditing(true) }} title="Muokkaa">
+          <Icon name="edit" size={19} color="#9b9a93" />
+        </button>
+      )}
+      {!editing && onCalendar && (
         <button className="iconbtn" onClick={() => onCalendar(item)} title="Lisää kalenteriin">
           <Icon name="calendar" size={20} color="#9b9a93" />
         </button>
       )}
-      <button className="iconbtn" onClick={() => onImage(item)} title="Lisää kuva">
-        <Icon name="camera" size={20} color="#9b9a93" />
-      </button>
-      <button className="del" onClick={() => onRemove(item)} title="Poista">
-        <Icon name="x" size={18} color="#9b9a93" />
-      </button>
+      {!editing && (
+        <button className="iconbtn" onClick={() => onImage(item)} title="Lisää kuva">
+          <Icon name="camera" size={20} color="#9b9a93" />
+        </button>
+      )}
+      {!editing && canModify && (
+        <button className="del" onClick={() => onRemove(item)} title="Poista">
+          <Icon name="x" size={18} color="#9b9a93" />
+        </button>
+      )}
     </div>
   )
 }

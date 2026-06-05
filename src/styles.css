@@ -113,7 +113,9 @@ input:focus, textarea:focus { border-color: #185FA5; box-shadow: 0 0 0 3px rgba(
 .item.done .txt { text-decoration: line-through; color: var(--text-muted); }
 .item .who { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .item .del { border: none; background: transparent; color: var(--text-muted); font-size: 20px; padding: 4px; }
-.item-thumb { width: 100%; border-radius: 10px; margin-top: 8px; max-height: 240px; object-fit: cover; }
+.item-thumb { width: 100%; border-radius: 10px; margin-top: 8px; max-height: 240px; object-fit: cover; display: block; }
+.img-del { position: absolute; top: 14px; right: 8px; border: none; background: rgba(0,0,0,0.55);
+  width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 .toolbar { position: sticky; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: linear-gradient(transparent, var(--bg) 30%); display: flex; gap: 8px; }
