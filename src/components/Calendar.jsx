@@ -52,7 +52,8 @@ export default function Calendar({ user, onBack }) {
   const [modal, setModal] = useState(null)  // null | { event }
 
   async function load() {
-    const { data } = await supabase.from('events').select('*')
+    const { data, error } = await supabase.from('events').select('*')
+    if (error) console.error('Tapahtumien haku epäonnistui:', error)
     setEvents(data || [])
     setLoading(false)
   }
@@ -246,8 +247,16 @@ function EventModal({ user, initial, onClose, onSaved }) {
       who: who || null, note: note.trim() || null,
       recur, recur_until: recur === 'none' ? null : (until || null),
     }
-    if (isEdit) await supabase.from('events').update(row).eq('id', initial.id)
-    else await supabase.from('events').insert({ ...row, created_by: user.name })
+    const { error } = isEdit
+      ? await supabase.from('events').update(row).eq('id', initial.id)
+      : await supabase.from('events').insert({ ...row, created_by: user.name })
+    setBusy(false)
+    if (error) {
+      console.error('Tallennus epäonnistui:', error)
+      alert('Tallennus epäonnistui: ' + (error.message || error.code || 'tuntematon virhe') +
+        '\n\nTarkista, että ajoit supabase/calendar.sql Supabasessa.')
+      return
+    }
     onSaved()
   }
 
