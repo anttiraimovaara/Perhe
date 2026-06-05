@@ -64,3 +64,26 @@ drop policy if exists "kuvat luku" on storage.objects;
 drop policy if exists "kuvat lataus" on storage.objects;
 create policy "kuvat luku"   on storage.objects for select using (bucket_id = 'kuvat');
 create policy "kuvat lataus" on storage.objects for insert with check (bucket_id = 'kuvat');
+
+-- ------------------------------------------------------------
+-- Kalenteri
+-- ------------------------------------------------------------
+create table if not exists public.events (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  event_date  date not null,
+  event_time  time,
+  who         text,
+  note        text,
+  recur       text not null default 'none' check (recur in ('none','weekly','monthly')),
+  recur_until date,
+  created_by  text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists events_date_idx on public.events(event_date);
+alter publication supabase_realtime add table public.events;
+alter table public.events enable row level security;
+drop policy if exists "perhe lukee tapahtumat" on public.events;
+drop policy if exists "perhe muokkaa tapahtumat" on public.events;
+create policy "perhe lukee tapahtumat"  on public.events for select using (true);
+create policy "perhe muokkaa tapahtumat" on public.events for all using (true) with check (true);

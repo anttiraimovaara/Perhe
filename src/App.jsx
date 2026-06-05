@@ -5,6 +5,7 @@ import PinGate from './components/PinGate'
 import UserPicker from './components/UserPicker'
 import ListsOverview from './components/ListsOverview'
 import ListView from './components/ListView'
+import Calendar from './components/Calendar'
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem('perhe_pin_ok') === FAMILY_PIN)
@@ -27,6 +28,9 @@ export default function App() {
   }
 
   if (view.name === 'category') {
+    if (view.category === 'calendar') {
+      return <Calendar user={user} onBack={() => setView({ name: 'home' })} />
+    }
     return (
       <ListsOverview
         category={CATEGORIES.find(c => c.id === view.category)}

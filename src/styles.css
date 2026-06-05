@@ -144,6 +144,53 @@ input:focus, textarea:focus { border-color: #185FA5; box-shadow: 0 0 0 3px rgba(
 .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
   background: #1c1c1a; color: #fff; padding: 10px 16px; border-radius: 20px; font-size: 14px; z-index: 50; }
 
+/* ---------- Kalenteri ---------- */
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-title { font-weight: 600; font-size: 18px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-week { margin-bottom: 4px; }
+.cal-wd { text-align: center; font-size: 12px; color: var(--text-muted); padding: 2px 0; }
+.cal-day {
+  aspect-ratio: 1 / 1; border: 1px solid transparent; background: var(--surface);
+  border-radius: 10px; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 6px 0 0; gap: 4px; color: var(--text);
+}
+.cal-day.off { opacity: 0.35; }
+.cal-day.sel { border-color: #185FA5; background: #E6F1FB; }
+.cal-day.today .cal-num { background: #185FA5; color: #fff; }
+.cal-num { font-size: 14px; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; }
+.cal-dots { display: flex; gap: 3px; min-height: 6px; }
+.cal-dots .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.cal-day-panel { margin-top: 16px; padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); }
+.cal-day-title { font-weight: 600; margin-bottom: 10px; }
+.cal-group { font-size: 13px; color: var(--text-muted); margin: 16px 0 6px; font-weight: 600; }
+
+.event-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid var(--border); }
+.event-row:last-child { border-bottom: none; }
+.event-bar { width: 4px; align-self: stretch; min-height: 34px; border-radius: 2px; flex-shrink: 0; }
+.event-time { font-size: 13px; color: var(--text-muted); width: 68px; flex-shrink: 0; }
+.event-main { display: flex; flex-direction: column; }
+.event-title { font-weight: 500; }
+.event-who { font-size: 12px; }
+
+/* Lomake-kentät ja modaali */
+.fld { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-muted); margin-top: 12px; }
+.fld input, .fld select { font-size: 16px; color: var(--text); }
+select { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid var(--border-strong);
+  border-radius: 12px; background: var(--surface); color: var(--text); }
+.row-check { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 16px; color: var(--text); }
+.row-check input { width: 20px; height: 20px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100;
+  display: flex; align-items: flex-end; justify-content: center; }
+.modal { background: var(--bg); width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto;
+  border-radius: 18px 18px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.modal-body { display: flex; flex-direction: column; }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #161614; --surface: #232320; --border: rgba(255,255,255,0.12);

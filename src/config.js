@@ -13,7 +13,16 @@ export const CATEGORIES = [
   { id: 'shopping', title: 'Kauppalista',  icon: 'cart',     color: '#185FA5', bg: '#E6F1FB', ready: true },
   { id: 'todo',     title: 'Tehtävät',     icon: 'check',    color: '#0F6E56', bg: '#E1F5EE', ready: true },
   { id: 'notes',    title: 'Muistilistat', icon: 'notes',    color: '#534AB7', bg: '#EEEDFE', ready: false },
-  { id: 'calendar', title: 'Kalenteri',    icon: 'calendar', color: '#854F0B', bg: '#FAEEDA', ready: false },
+  { id: 'calendar', title: 'Kalenteri',    icon: 'calendar', color: '#854F0B', bg: '#FAEEDA', ready: true },
 ]
 
 export const FAMILY_PIN = import.meta.env.VITE_FAMILY_PIN || '1234'
+
+// "Koko perhe" -valinta kalenterissa
+export const KOKO_PERHE = { name: 'Koko perhe', color: '#5F5E5A', bg: '#F1EFE8' }
+
+// Palauta henkilön väri nimellä (myös "Koko perhe")
+export function colorFor(name) {
+  if (name === KOKO_PERHE.name) return KOKO_PERHE
+  return FAMILY.find(f => f.name === name) || { name, color: '#5F5E5A', bg: '#F1EFE8' }
+}
