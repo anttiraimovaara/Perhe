@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import Icon from '../Icon'
 import Dictation from './Dictation'
+import { EventModal } from './Calendar'
+
+const pad = n => String(n).padStart(2, '0')
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
 
 export default function ListView({ list, user, onBack }) {
   const [items, setItems] = useState([])
@@ -11,6 +15,8 @@ export default function ListView({ list, user, onBack }) {
   const [toast, setToast] = useState('')
   const fileRef = useRef(null)
   const pendingImageItem = useRef(null)
+  const [calItem, setCalItem] = useState(null)
+  const isTodo = list.category === 'todo'
 
   async function load() {
     const { data } = await supabase
@@ -136,7 +142,8 @@ export default function ListView({ list, user, onBack }) {
         )}
 
         {openItems.map(item => (
-          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage} />
+          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage}
+            onCalendar={isTodo ? setCalItem : null} />
         ))}
 
         {doneItems.length > 0 && (
@@ -145,7 +152,8 @@ export default function ListView({ list, user, onBack }) {
           </div>
         )}
         {doneItems.map(item => (
-          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage} />
+          <ItemRow key={item.id} item={item} onToggle={toggle} onRemove={removeItem} onImage={pickImage}
+            onCalendar={isTodo ? setCalItem : null} />
         ))}
       </div>
 
@@ -165,11 +173,18 @@ export default function ListView({ list, user, onBack }) {
 
       {toast && <div className="toast">{toast}</div>}
       {busy && <div className="toast" style={{ bottom: 140 }}>Käsitellään…</div>}
+
+      {calItem && (
+        <EventModal user={user}
+          initial={{ title: calItem.text, event_date: todayYmd() }}
+          onClose={() => setCalItem(null)}
+          onSaved={() => { setCalItem(null); showToast('Lisätty kalenteriin') }} />
+      )}
     </>
   )
 }
 
-function ItemRow({ item, onToggle, onRemove, onImage }) {
+function ItemRow({ item, onToggle, onRemove, onImage, onCalendar }) {
   return (
     <div className={'item' + (item.checked ? ' done' : '')}>
       <button className={'check' + (item.checked ? ' on' : '')} onClick={() => onToggle(item)}>
@@ -180,6 +195,11 @@ function ItemRow({ item, onToggle, onRemove, onImage }) {
         {item.added_by && <div className="who">{item.added_by}</div>}
         {item.image_url && <img className="item-thumb" src={item.image_url} alt="" />}
       </div>
+      {onCalendar && (
+        <button className="iconbtn" onClick={() => onCalendar(item)} title="Lisää kalenteriin">
+          <Icon name="calendar" size={20} color="#9b9a93" />
+        </button>
+      )}
       <button className="iconbtn" onClick={() => onImage(item)} title="Lisää kuva">
         <Icon name="camera" size={20} color="#9b9a93" />
       </button>

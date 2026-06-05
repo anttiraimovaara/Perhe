@@ -76,7 +76,7 @@ export default function Calendar({ user, onBack }) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1) })
-  const [selected, setSelected] = useState(ymd(new Date()))
+  const [selected, setSelected] = useState(null)
   const [modal, setModal] = useState(null)  // null | { event }
 
   async function load() {
@@ -126,6 +126,12 @@ export default function Calendar({ user, onBack }) {
 
   const selectedOcc = selected ? (monthOcc[selected] || []).slice().sort(
     (a, b) => (a.event_time || '99') < (b.event_time || '99') ? -1 : 1) : []
+
+  // Viimeksi lisätty tapahtuma (uusin created_at)
+  const lastAdded = useMemo(() => {
+    if (!events.length) return null
+    return events.slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0]
+  }, [events])
 
   function relLabel(dateStr) {
     const d = parseYmd(dateStr), t = startOfDay(new Date())
@@ -188,6 +194,16 @@ export default function Calendar({ user, onBack }) {
           </div>
         )}
 
+        {/* Viimeksi lisätty */}
+        {lastAdded && (
+          <>
+            <h2 style={{ fontSize: 17, margin: '22px 0 10px' }}>Viimeksi lisätty</h2>
+            <div className="cal-group">{relLabel(lastAdded.event_date)}</div>
+            <EventRow occ={{ ...lastAdded, occ: parseYmd(lastAdded.event_date) }}
+              onClick={() => setModal({ event: lastAdded })} />
+          </>
+        )}
+
         {/* Tulevat tapahtumat */}
         <h2 style={{ fontSize: 17, margin: '22px 0 10px' }}>Tulevat tapahtumat</h2>
         {loading && <div className="spinner">Ladataan…</div>}
@@ -232,7 +248,7 @@ function EventRow({ occ, onClick }) {
   )
 }
 
-function EventModal({ user, initial, onClose, onSaved }) {
+export function EventModal({ user, initial, onClose, onSaved }) {
   const isEdit = !!initial.id
   const [title, setTitle] = useState(initial.title || '')
   const [date, setDate] = useState(initial.event_date || ymd(new Date()))
