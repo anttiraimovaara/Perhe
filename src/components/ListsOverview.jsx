@@ -70,7 +70,12 @@ export default function ListsOverview({ category, user, onBack, onOpenList }) {
   }
 
   async function removeList(list) {
-    if (!confirm(`Poistetaanko lista "${list.title}" ja kaikki sen rivit?`)) return
+    // Vain listan tekijä voi poistaa sen (vanhat ilman tekijää sallitaan kaikille)
+    if (list.created_by && list.created_by !== user.name) {
+      alert(`Vain ${list.created_by} voi poistaa tämän listan.`)
+      return
+    }
+    if (!confirm(`Haluatko varmasti poistaa listan "${list.title}" ja kaikki sen rivit?`)) return
     await supabase.from('lists').delete().eq('id', list.id)
   }
 
@@ -109,9 +114,11 @@ export default function ListsOverview({ category, user, onBack, onOpenList }) {
                   {c.total === 0 ? 'Tyhjä' : `${c.open} avoinna · ${c.total} riviä`}
                 </div>
               </div>
-              <button className="iconbtn" onClick={(e) => { e.stopPropagation(); removeList(list) }}>
-                <Icon name="trash" size={20} color="#9b9a93" />
-              </button>
+              {(!list.created_by || list.created_by === user.name) && (
+                <button className="iconbtn" onClick={(e) => { e.stopPropagation(); removeList(list) }}>
+                  <Icon name="trash" size={20} color="#9b9a93" />
+                </button>
+              )}
             </div>
           )
         })}
