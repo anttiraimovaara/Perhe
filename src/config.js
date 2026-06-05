@@ -1,0 +1,19 @@
+// Perheenjäsenet. Jokaisella oma väri ja nimikirjaimet avataria varten.
+export const FAMILY = [
+  { name: 'Antti',   color: '#185FA5', bg: '#E6F1FB' },
+  { name: 'Katja',   color: '#993556', bg: '#FBEAF0' },
+  { name: 'Iisakki', color: '#0F6E56', bg: '#E1F5EE' },
+  { name: 'Eelis',   color: '#854F0B', bg: '#FAEEDA' },
+  { name: 'Meea',    color: '#534AB7', bg: '#EEEDFE' },
+  { name: 'Petra',   color: '#993C1D', bg: '#FAECE7' },
+]
+
+// Etusivun kategoriat. shopping ja todo ovat käytössä, muut tulossa.
+export const CATEGORIES = [
+  { id: 'shopping', title: 'Kauppalista',  icon: 'cart',     color: '#185FA5', bg: '#E6F1FB', ready: true },
+  { id: 'todo',     title: 'Tehtävät',     icon: 'check',    color: '#0F6E56', bg: '#E1F5EE', ready: true },
+  { id: 'notes',    title: 'Muistilistat', icon: 'notes',    color: '#534AB7', bg: '#EEEDFE', ready: false },
+  { id: 'calendar', title: 'Kalenteri',    icon: 'calendar', color: '#854F0B', bg: '#FAEEDA', ready: false },
+]
+
+export const FAMILY_PIN = import.meta.env.VITE_FAMILY_PIN || '1234'
