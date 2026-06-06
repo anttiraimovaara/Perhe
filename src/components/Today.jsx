@@ -9,6 +9,7 @@ const WD_SHORT = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la']
 export default function Today() {
   const [events, setEvents] = useState([])
   const [last, setLast] = useState(null)
+  const [showFeed, setShowFeed] = useState(false)
 
   async function load() {
     const { data: ev } = await supabase.from('events').select('*')
@@ -96,15 +97,79 @@ export default function Today() {
       {last && (
         <div className="today-last">
           <Icon name="plus" size={14} color="#6b6a64" />
-          <span>
+          <span className="today-last-text">
             Viimeksi lisätty: <strong>{last.label}</strong>
             {last.source ? ` (${last.source})` : ''}
             {last.who ? ` – ${last.who}` : ''}
           </span>
+          <button className="iconbtn" style={{ padding: 4 }} onClick={() => setShowFeed(true)}
+            title="Näytä kaikki lisäykset">
+            <Icon name="chevron-right" size={18} color="#6b6a64" />
+          </button>
         </div>
       )}
 
       {nothing && <div className="today-empty">Ei vielä mitään – aloita lisäämällä lista tai tapahtuma.</div>}
+
+      {showFeed && <FeedModal onClose={() => setShowFeed(false)} />}
+    </div>
+  )
+}
+
+function feedTime(iso) {
+  const d = new Date(iso), now = new Date(), pad = n => String(n).padStart(2, '0')
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  if (d.toDateString() === now.toDateString()) return `tänään ${time}`
+  const y = new Date(now); y.setDate(now.getDate() - 1)
+  if (d.toDateString() === y.toDateString()) return `eilen ${time}`
+  return `${d.getDate()}.${d.getMonth() + 1}. ${time}`
+}
+
+function FeedModal({ onClose }) {
+  const [rows, setRows] = useState(null)
+
+  useEffect(() => {
+    (async () => {
+      const N = 25
+      const [it, le, an, po, ls] = await Promise.all([
+        supabase.from('items').select('text,created_at,added_by,list_id').order('created_at', { ascending: false }).limit(N),
+        supabase.from('events').select('title,created_at,created_by').order('created_at', { ascending: false }).limit(N),
+        supabase.from('announcements').select('text,created_at,created_by').order('created_at', { ascending: false }).limit(N),
+        supabase.from('polls').select('question,created_at,created_by').order('created_at', { ascending: false }).limit(N),
+        supabase.from('lists').select('id,title'),
+      ])
+      const lmap = new Map((ls.data || []).map(l => [l.id, l.title]))
+      const all = []
+      ;(it.data || []).forEach(r => all.push({ icon: 'cart', label: r.text, source: lmap.get(r.list_id) || 'Lista', who: r.added_by, created_at: r.created_at }))
+      ;(le.data || []).forEach(r => all.push({ icon: 'calendar', label: r.title, source: 'Kalenteri', who: r.created_by, created_at: r.created_at }))
+      ;(an.data || []).forEach(r => all.push({ icon: 'megaphone', label: r.text, source: 'Ilmoitukset', who: r.created_by, created_at: r.created_at }))
+      ;(po.data || []).forEach(r => all.push({ icon: 'poll', label: r.question, source: 'Demokratia', who: r.created_by, created_at: r.created_at }))
+      all.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      setRows(all.slice(0, 60))
+    })()
+  }, [])
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <strong>Viimeksi lisätyt</strong>
+          <button className="iconbtn" onClick={onClose}><Icon name="x" size={20} /></button>
+        </div>
+        <div className="modal-body">
+          {!rows && <div className="spinner">Ladataan…</div>}
+          {rows && rows.length === 0 && <div className="empty">Ei lisäyksiä.</div>}
+          {rows && rows.map((r, i) => (
+            <div key={i} className="feed-row">
+              <Icon name={r.icon} size={18} color="#9b9a93" />
+              <div className="feed-main">
+                <div className="feed-label">{r.label}</div>
+                <div className="feed-meta">{r.source}{r.who ? ` · ${r.who}` : ''} · {feedTime(r.created_at)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
