@@ -6,6 +6,9 @@ import UserPicker from './components/UserPicker'
 import ListsOverview from './components/ListsOverview'
 import ListView from './components/ListView'
 import Calendar from './components/Calendar'
+import Today from './components/Today'
+import Polls from './components/Polls'
+import Announcements from './components/Announcements'
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem('perhe_pin_ok') === FAMILY_PIN)
@@ -30,6 +33,12 @@ export default function App() {
   if (view.name === 'category') {
     if (view.category === 'calendar') {
       return <Calendar user={user} onBack={() => setView({ name: 'home' })} />
+    }
+    if (view.category === 'polls') {
+      return <Polls user={user} onBack={() => setView({ name: 'home' })} />
+    }
+    if (view.category === 'notices') {
+      return <Announcements user={user} onBack={() => setView({ name: 'home' })} />
     }
     return (
       <ListsOverview
@@ -66,6 +75,7 @@ function Home({ user, onPickUser, onOpen }) {
         </button>
       </div>
       <div className="page">
+        <Today />
         <div className="grid2">
           {CATEGORIES.map(c => (
             <button key={c.id} className={'cat-card' + (c.ready ? '' : ' disabled')}

@@ -12,6 +12,11 @@ const PATHS = {
   x: 'M6 6l12 12M18 6L6 18',
   settings: 'M12 9a3 3 0 100 6 3 3 0 000-6zM19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L14.5 3h-5l-.3 2.6a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.3 2.4h5l.3-2.4a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6a7 7 0 00.1-1z',
   edit: 'M4 20h4L18.5 9.5l-4-4L4 16v4zM13.5 6.5l4 4',
+  'chevron-down': 'M6 9l6 6 6-6',
+  'chevron-right': 'M9 6l6 6-6 6',
+  grip: 'M5 9h14M5 15h14',
+  poll: 'M6 20V10M12 20V4M18 20v-7',
+  megaphone: 'M4 10v4h3l9 5V5L7 10H4zM18 9a3 3 0 010 6',
 }
 
 export default function Icon({ name, size = 24, color = 'currentColor', stroke = 2, style }) {

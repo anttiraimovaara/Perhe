@@ -3,6 +3,9 @@ import { supabase } from '../supabaseClient'
 import Icon from '../Icon'
 import Dictation from './Dictation'
 import { EventModal } from './Calendar'
+import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core'
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const pad = n => String(n).padStart(2, '0')
 const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -16,6 +19,7 @@ export default function ListView({ list, user, onBack }) {
   const fileRef = useRef(null)
   const pendingImageItem = useRef(null)
   const [calItem, setCalItem] = useState(null)
+  const [showDone, setShowDone] = useState(false)
   const isTodo = list.category === 'todo'
 
   async function load() {
@@ -153,8 +157,25 @@ export default function ListView({ list, user, onBack }) {
     }
   }
 
-  const openItems = items.filter(i => !i.checked)
-  const doneItems = items.filter(i => i.checked)
+  const byPos = (a, b) => (a.position || 0) - (b.position || 0)
+  const openItems = items.filter(i => !i.checked).sort(byPos)
+  const doneItems = items.filter(i => i.checked).sort(byPos)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+  )
+
+  async function handleDragEnd(e) {
+    const { active, over } = e
+    if (!over || active.id === over.id) return
+    const ids = openItems.map(i => i.id)
+    const reordered = arrayMove(openItems, ids.indexOf(active.id), ids.indexOf(over.id))
+    const updates = reordered.map((it, idx) => ({ id: it.id, position: (idx + 1) * 1000 }))
+    const map = new Map(updates.map(u => [u.id, u.position]))
+    setItems(prev => prev.map(i => map.has(i.id) ? { ...i, position: map.get(i.id) } : i))
+    for (const u of updates) await supabase.from('items').update({ position: u.position }).eq('id', u.id)
+  }
 
   return (
     <>
@@ -169,18 +190,23 @@ export default function ListView({ list, user, onBack }) {
           <div className="empty">Tyhjä lista. Lisää rivejä kirjoittamalla tai sanelemalla.</div>
         )}
 
-        {openItems.map(item => (
-          <ItemRow key={item.id} item={item} me={user.name} onToggle={toggle} onRemove={removeItem}
-            onImage={pickImage} onEdit={editItem} onRemoveImage={removeImage}
-            onCalendar={isTodo ? setCalItem : null} />
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={openItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            {openItems.map(item => (
+              <SortableItemRow key={item.id} item={item} me={user.name} onToggle={toggle} onRemove={removeItem}
+                onImage={pickImage} onEdit={editItem} onRemoveImage={removeImage}
+                onCalendar={isTodo ? setCalItem : null} />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         {doneItems.length > 0 && (
-          <div className="sub" style={{ color: 'var(--text-muted)', margin: '16px 0 8px', fontSize: 13 }}>
+          <button className="done-toggle" onClick={() => setShowDone(v => !v)}>
+            <Icon name={showDone ? 'chevron-down' : 'chevron-right'} size={18} color="#9b9a93" />
             Valmiit ({doneItems.length})
-          </div>
+          </button>
         )}
-        {doneItems.map(item => (
+        {showDone && doneItems.map(item => (
           <ItemRow key={item.id} item={item} me={user.name} onToggle={toggle} onRemove={removeItem}
             onImage={pickImage} onEdit={editItem} onRemoveImage={removeImage}
             onCalendar={isTodo ? setCalItem : null} />
@@ -214,7 +240,13 @@ export default function ListView({ list, user, onBack }) {
   )
 }
 
-function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, onRemoveImage }) {
+function SortableItemRow(props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id })
+  const dragStyle = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }
+  return <ItemRow {...props} dragRef={setNodeRef} dragStyle={dragStyle} handleProps={{ ...attributes, ...listeners }} />
+}
+
+function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, onRemoveImage, dragRef, dragStyle, handleProps }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(item.text)
   const [showImg, setShowImg] = useState(false)
@@ -226,19 +258,27 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
   function saveEdit() { onEdit(item, val); setEditing(false) }
 
   return (
-    <div className={'item' + (item.checked ? ' done' : '')}>
+    <div ref={dragRef} style={dragStyle} className={'item' + (item.checked ? ' done' : '')}>
       <button className={'check' + (item.checked ? ' on' : '')} onClick={() => onToggle(item)}>
         {item.checked && <Icon name="check" size={16} color="#fff" stroke={3} />}
       </button>
       <div className="txt">
         {editing ? (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input type="text" value={val} autoFocus onChange={e => setVal(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
-              style={{ flex: 1 }} />
-            <button className="btn primary" onClick={saveEdit} title="Tallenna">
-              <Icon name="check" size={16} color="#fff" stroke={3} />
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="text" value={val} autoFocus onChange={e => setVal(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(false) }}
+                style={{ flex: 1 }} />
+              <button className="btn primary" onClick={saveEdit} title="Tallenna">
+                <Icon name="check" size={16} color="#fff" stroke={3} />
+              </button>
+            </div>
+            {item.image_url && canDeleteImage && (
+              <button className="btn" style={{ color: '#A32D2D', alignSelf: 'flex-start' }}
+                onClick={() => { setEditing(false); onRemoveImage(item) }}>
+                <Icon name="trash" size={16} color="#A32D2D" /> &nbsp;Poista kuva
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -288,6 +328,11 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
       {!editing && canModify && (
         <button className="del" onClick={() => onRemove(item)} title="Poista">
           <Icon name="x" size={18} color="#9b9a93" />
+        </button>
+      )}
+      {!editing && handleProps && (
+        <button className="iconbtn drag-handle" {...handleProps} title="Järjestä" aria-label="Järjestä">
+          <Icon name="grip" size={20} color="#9b9a93" />
         </button>
       )}
     </div>

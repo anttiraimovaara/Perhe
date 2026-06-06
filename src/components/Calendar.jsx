@@ -5,11 +5,11 @@ import Icon from '../Icon'
 import Dictation from './Dictation'
 
 // ---------- Päivämääräapurit (paikallinen aika, ei aikavyöhykesotkua) ----------
-const pad = n => String(n).padStart(2, '0')
-const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
-const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
-const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
+export const pad = n => String(n).padStart(2, '0')
+export const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+export const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
+export const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+export const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
 function addMonthsClamped(d, n) {
   const x = new Date(d)
   const day = x.getDate()
@@ -50,7 +50,7 @@ const WD_HEAD = ['ma','ti','ke','to','pe','la','su']
 const monIndex = d => (d.getDay() + 6) % 7   // ma=0 ... su=6
 
 // Laajenna toistuvat tapahtumat esiintymiksi annetulle aikavälille
-function expand(events, rangeStart, rangeEnd) {
+export function expand(events, rangeStart, rangeEnd) {
   const out = []
   for (const ev of events) {
     const start = parseYmd(ev.event_date)

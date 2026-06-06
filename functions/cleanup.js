@@ -92,6 +92,8 @@ Sanelu: """${text}"""`
   // ---- Tila: pilko puhe erillisiksi riveiksi ----
   const ohje = category === 'todo'
     ? 'Teksti on perheen tehtävälistalle saneltua puhetta. Pilko se erillisiksi tehtäviksi.'
+    : category === 'notes'
+    ? 'Teksti on perheen muistilistalle saneltua puhetta. Pilko se erillisiksi muistiinpanoiksi.'
     : 'Teksti on kauppalistalle saneltua puhetta. Pilko se erillisiksi ostettaviksi tuotteiksi.'
   const prompt = `${ohje}
 Palauta JSON-taulukko merkkijonoista, jossa jokainen rivi on yksi lyhyt, siisti kohta suomeksi.

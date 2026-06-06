@@ -12,8 +12,10 @@ export const FAMILY = [
 export const CATEGORIES = [
   { id: 'shopping', title: 'Kauppalista',  icon: 'cart',     color: '#185FA5', bg: '#E6F1FB', ready: true },
   { id: 'todo',     title: 'Tehtävät',     icon: 'check',    color: '#0F6E56', bg: '#E1F5EE', ready: true },
-  { id: 'notes',    title: 'Muistilistat', icon: 'notes',    color: '#534AB7', bg: '#EEEDFE', ready: false },
+  { id: 'notes',    title: 'Muistilistat', icon: 'notes',    color: '#534AB7', bg: '#EEEDFE', ready: true },
   { id: 'calendar', title: 'Kalenteri',    icon: 'calendar', color: '#854F0B', bg: '#FAEEDA', ready: true },
+  { id: 'polls',    title: 'Demokratia',   icon: 'poll',     color: '#1D9E75', bg: '#E1F5EE', ready: true },
+  { id: 'notices',  title: 'Ilmoitukset',  icon: 'megaphone',color: '#D85A30', bg: '#FAECE7', ready: true },
 ]
 
 export const FAMILY_PIN = import.meta.env.VITE_FAMILY_PIN || '1234'
