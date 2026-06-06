@@ -250,6 +250,7 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(item.text)
   const [showImg, setShowImg] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   // Vain rivin lisääjä saa muokata/poistaa (vanhat ilman lisääjää sallitaan kaikille)
   const canModify = !item.added_by || item.added_by === me
   // Kuvan saa poistaa sen lisääjä tai rivin tekijä
@@ -262,7 +263,7 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
       <button className={'check' + (item.checked ? ' on' : '')} onClick={() => onToggle(item)}>
         {item.checked && <Icon name="check" size={16} color="#fff" stroke={3} />}
       </button>
-      <div className="txt">
+      <div className="item-body">
         {editing ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -282,17 +283,45 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
           </div>
         ) : (
           <>
-            {item.text}
-            {item.added_by && <div className="who">{item.added_by}</div>}
+            <div className={'item-text' + (expanded ? '' : ' clamp2')} onClick={() => setExpanded(e => !e)}>
+              {item.text}
+            </div>
+            <div className="item-foot">
+              <span className="who">{item.added_by || ''}</span>
+              <span className="item-actions">
+                {item.image_url && (
+                  <button className="thumb-btn" onClick={() => setShowImg(true)} title="Näytä kuva">
+                    <img className="item-thumb-sm" src={item.image_url} alt="" />
+                  </button>
+                )}
+                {canModify && (
+                  <button className="iconbtn" onClick={() => { setVal(item.text); setEditing(true) }} title="Muokkaa">
+                    <Icon name="edit" size={18} color="#9b9a93" />
+                  </button>
+                )}
+                {onCalendar && (
+                  <button className="iconbtn" onClick={() => onCalendar(item)} title="Lisää kalenteriin">
+                    <Icon name="calendar" size={18} color="#9b9a93" />
+                  </button>
+                )}
+                <button className="iconbtn" onClick={() => onImage(item)} title="Lisää kuva">
+                  <Icon name="camera" size={18} color="#9b9a93" />
+                </button>
+                {canModify && (
+                  <button className="iconbtn" onClick={() => onRemove(item)} title="Poista">
+                    <Icon name="x" size={18} color="#9b9a93" />
+                  </button>
+                )}
+                {handleProps && (
+                  <button className="iconbtn drag-handle" {...handleProps} title="Järjestä" aria-label="Järjestä">
+                    <Icon name="grip" size={18} color="#9b9a93" />
+                  </button>
+                )}
+              </span>
+            </div>
           </>
         )}
       </div>
-
-      {!editing && item.image_url && (
-        <button className="thumb-btn" onClick={() => setShowImg(true)} title="Näytä kuva">
-          <img className="item-thumb-sm" src={item.image_url} alt="" />
-        </button>
-      )}
 
       {showImg && (
         <div className="lightbox" onClick={() => setShowImg(false)}>
@@ -308,32 +337,6 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
               onClick={() => setShowImg(false)}>Sulje</button>
           </div>
         </div>
-      )}
-
-      {!editing && canModify && (
-        <button className="iconbtn" onClick={() => { setVal(item.text); setEditing(true) }} title="Muokkaa">
-          <Icon name="edit" size={19} color="#9b9a93" />
-        </button>
-      )}
-      {!editing && onCalendar && (
-        <button className="iconbtn" onClick={() => onCalendar(item)} title="Lisää kalenteriin">
-          <Icon name="calendar" size={20} color="#9b9a93" />
-        </button>
-      )}
-      {!editing && (
-        <button className="iconbtn" onClick={() => onImage(item)} title="Lisää kuva">
-          <Icon name="camera" size={20} color="#9b9a93" />
-        </button>
-      )}
-      {!editing && canModify && (
-        <button className="del" onClick={() => onRemove(item)} title="Poista">
-          <Icon name="x" size={18} color="#9b9a93" />
-        </button>
-      )}
-      {!editing && handleProps && (
-        <button className="iconbtn drag-handle" {...handleProps} title="Järjestä" aria-label="Järjestä">
-          <Icon name="grip" size={20} color="#9b9a93" />
-        </button>
       )}
     </div>
   )

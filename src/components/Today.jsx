@@ -14,18 +14,23 @@ export default function Today() {
     const { data: ev } = await supabase.from('events').select('*')
     setEvents(ev || [])
 
-    const { data: it } = await supabase.from('items')
-      .select('text, created_at, added_by, list_id').order('created_at', { ascending: false }).limit(1)
-    const { data: le } = await supabase.from('events')
-      .select('title, created_at, created_by').order('created_at', { ascending: false }).limit(1)
+    const latest = (q, ascending = false) => q.order('created_at', { ascending }).limit(1)
+    const [{ data: it }, { data: le }, { data: an }, { data: po }] = await Promise.all([
+      latest(supabase.from('items').select('text, created_at, added_by, list_id')),
+      latest(supabase.from('events').select('title, created_at, created_by')),
+      latest(supabase.from('announcements').select('text, created_at, created_by')),
+      latest(supabase.from('polls').select('question, created_at, created_by')),
+    ])
     const cand = []
-    if (it && it[0]) cand.push({ type: 'item', ...it[0] })
-    if (le && le[0]) cand.push({ type: 'event', ...le[0] })
+    if (it && it[0]) cand.push({ type: 'item', label: it[0].text, source: '', created_at: it[0].created_at, who: it[0].added_by, list_id: it[0].list_id })
+    if (le && le[0]) cand.push({ type: 'event', label: le[0].title, source: 'kalenteri', created_at: le[0].created_at, who: le[0].created_by })
+    if (an && an[0]) cand.push({ type: 'ann', label: an[0].text, source: 'Ilmoitukset', created_at: an[0].created_at, who: an[0].created_by })
+    if (po && po[0]) cand.push({ type: 'poll', label: po[0].question, source: 'Demokratia', created_at: po[0].created_at, who: po[0].created_by })
     cand.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
     let top = cand[0] || null
     if (top && top.type === 'item' && top.list_id) {
       const { data: l } = await supabase.from('lists').select('title').eq('id', top.list_id).single()
-      top = { ...top, listTitle: l?.title }
+      top = { ...top, source: l?.title || '' }
     }
     setLast(top)
   }
@@ -35,6 +40,8 @@ export default function Today() {
     const ch = supabase.channel('today')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, load)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [])
@@ -90,11 +97,9 @@ export default function Today() {
         <div className="today-last">
           <Icon name="plus" size={14} color="#6b6a64" />
           <span>
-            Viimeksi lisätty: <strong>{last.type === 'item' ? last.text : last.title}</strong>
-            {last.type === 'item'
-              ? (last.listTitle ? ` (${last.listTitle})` : '')
-              : ' (kalenteri)'}
-            {(last.added_by || last.created_by) ? ` – ${last.added_by || last.created_by}` : ''}
+            Viimeksi lisätty: <strong>{last.label}</strong>
+            {last.source ? ` (${last.source})` : ''}
+            {last.who ? ` – ${last.who}` : ''}
           </span>
         </div>
       )}
