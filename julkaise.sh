@@ -1,5 +1,5 @@
 #!/bin/bash
-# Julkaisee muutokset GitHubiin -> Netlify rakentaa uuden version automaattisesti.
+# Julkaisee muutokset GitHubiin -> Cloudflare Pages rakentaa uuden version automaattisesti.
 # Käyttö Terminaalissa kansion sisällä:  bash julkaise.sh
 
 cd "$(dirname "$0")" || exit 1
@@ -16,4 +16,4 @@ git commit -m "$msg"   # ei haittaa vaikka ei olisi uutta committoitavaa
 git push
 
 echo ""
-echo "Valmis. Netlify rakentaa uuden version parissa minuutissa."
+echo "Valmis. Cloudflare Pages rakentaa uuden version parissa minuutissa."

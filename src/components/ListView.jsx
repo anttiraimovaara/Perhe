@@ -187,7 +187,7 @@ export default function ListView({ list, user, onBack }) {
         ))}
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" capture="environment"
+      <input ref={fileRef} type="file" accept="image/*"
         style={{ display: 'none' }} onChange={onFile} />
 
       <div className="toolbar">
@@ -217,6 +217,7 @@ export default function ListView({ list, user, onBack }) {
 function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, onRemoveImage }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(item.text)
+  const [showImg, setShowImg] = useState(false)
   // Vain rivin lisääjä saa muokata/poistaa (vanhat ilman lisääjää sallitaan kaikille)
   const canModify = !item.added_by || item.added_by === me
   // Kuvan saa poistaa sen lisääjä tai rivin tekijä
@@ -243,19 +244,31 @@ function ItemRow({ item, me, onToggle, onRemove, onImage, onCalendar, onEdit, on
           <>
             {item.text}
             {item.added_by && <div className="who">{item.added_by}</div>}
-            {item.image_url && (
-              <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
-                <img className="item-thumb" src={item.image_url} alt="" />
-                {canDeleteImage && (
-                  <button className="img-del" onClick={() => onRemoveImage(item)} title="Poista kuva">
-                    <Icon name="trash" size={16} color="#fff" />
-                  </button>
-                )}
-              </div>
-            )}
           </>
         )}
       </div>
+
+      {!editing && item.image_url && (
+        <button className="thumb-btn" onClick={() => setShowImg(true)} title="Näytä kuva">
+          <img className="item-thumb-sm" src={item.image_url} alt="" />
+        </button>
+      )}
+
+      {showImg && (
+        <div className="lightbox" onClick={() => setShowImg(false)}>
+          <img src={item.image_url} alt="" onClick={e => e.stopPropagation()} />
+          <div className="lightbox-actions" onClick={e => e.stopPropagation()}>
+            {canDeleteImage && (
+              <button className="btn" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+                onClick={() => { setShowImg(false); onRemoveImage(item) }}>
+                <Icon name="trash" size={18} color="#fff" /> &nbsp;Poista kuva
+              </button>
+            )}
+            <button className="btn" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+              onClick={() => setShowImg(false)}>Sulje</button>
+          </div>
+        </div>
+      )}
 
       {!editing && canModify && (
         <button className="iconbtn" onClick={() => { setVal(item.text); setEditing(true) }} title="Muokkaa">
