@@ -51,7 +51,7 @@ export default function ListsOverview({ category, user, onBack, onOpenList }) {
     if (!rawText.trim()) return
     setBusy(true)
     try {
-      const res = await fetch('/.netlify/functions/cleanup', {
+      const res = await fetch('/cleanup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: rawText, mode: 'title' }),

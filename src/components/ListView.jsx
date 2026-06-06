@@ -123,24 +123,31 @@ export default function ListView({ list, user, onBack }) {
     if (!rawText.trim()) return
     setBusy(true)
     try {
-      const res = await fetch('/.netlify/functions/cleanup', {
+      let cleaned = null
+      const res = await fetch('/cleanup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: rawText, category: list.category }),
       })
-      if (res.ok) {
-        const { items: cleaned } = await res.json()
+      const ct = res.headers.get('content-type') || ''
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json()
+        if (Array.isArray(data.items)) cleaned = data.items
+      }
+      if (Array.isArray(cleaned) && cleaned.length) {
         await addItems(cleaned)
         showToast(`Lisätty ${cleaned.length} riviä`)
       } else {
-        // Varakeino jos funktio ei vastaa: pilko rivinvaihdoista/pilkuista
-        const fallback = rawText.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+        // Siistiminen ei vastannut -> pilko parhaan mukaan ja kerro käyttäjälle
+        const fallback = rawText.split(/[\n,]+|\bja\b/).map(s => s.trim()).filter(Boolean)
         await addItems(fallback)
-        showToast('Lisätty (ilman siistimistä)')
+        showToast('Sanelun siistiminen ei vastannut – tarkista ANTHROPIC_API_KEY')
       }
     } catch (err) {
-      const fallback = rawText.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+      console.error('Sanelu epäonnistui:', err)
+      const fallback = rawText.split(/[\n,]+|\bja\b/).map(s => s.trim()).filter(Boolean)
       await addItems(fallback)
+      showToast('Sanelun siistiminen ei vastannut')
     } finally {
       setBusy(false)
     }
